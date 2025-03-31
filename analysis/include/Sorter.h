@@ -78,6 +78,8 @@ class Sorter{
 
     std::vector<Long64_t> double_events_check;
 
+    Int_t fEventMult;
+
     std::vector<Double_t> fGePlastic_ECond;
     std::vector<Double_t> fGePlastic_tCond;
     std::vector<Double_t> fGePlastic_tDiff;

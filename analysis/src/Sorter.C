@@ -138,7 +138,6 @@ void Sorter::ClearVectors()
     fMonsterPlastic_Q2Cond.clear();
     fMonsterPlastic_Q3Cond.clear();
     fMonsterPlastic_Id.clear();
-    //fMonsterPlastic_Q2Cond_calibrated.clear();
 
     //Monster-MrBig
     fMrBigPlastic_tDiff.clear();
@@ -241,13 +240,14 @@ void Sorter::SetTreesAndBranches(const char* OutputFileName)
     output_tree_coinc->Branch("MonsterPlastic_tDiff", &fMonsterPlastic_tDiff);
     output_tree_coinc->Branch("MonsterPlastic_Id", &fMonsterPlastic_Id);
     output_tree_coinc->Branch("MonsterPlastic_Mult", &fMonsterPlastic_Mult);
-    //output_tree_coinc->Branch("MonsterPlastic_Q2Cond_calibrated", &fMonsterPlastic_Q2Cond_calibrated);
 
     //Monster-MrBig
     output_tree_coinc->Branch("MrBigPlastic_ECond", &fMrBigPlastic_ECond);
     output_tree_coinc->Branch("MrBigPlastic_tCond", &fMrBigPlastic_tCond);
     output_tree_coinc->Branch("MrBigPlastic_tDiff", &fMrBigPlastic_tDiff);
     output_tree_coinc->Branch("MrBigPlastic_Mult", &fMrBigPlastic_Mult);
+
+    output_tree_coinc->Branch("EventMult", &fEventMult);
 }
 
 //******************************************************************************
@@ -310,6 +310,7 @@ void Sorter::FillCoincBranches(Double_t backward_window, Double_t forward_window
         fMrBigPlastic_Mult = 1;
         fMonsterPlastic_Mult = 1;
         fGePlastic_Mult = 1;
+        fEventMult = 1;
 
         if(fEntry < lastevent) continue;
 
@@ -330,6 +331,7 @@ void Sorter::FillCoincBranches(Double_t backward_window, Double_t forward_window
                     fMrBigPlastic_ECond.push_back(MrBig_alignement(raw_energy1));
                     fMrBigPlastic_tCond.push_back((Double_t)raw_time / 1.e9); //mili;
                     fMrBigPlastic_Mult++;
+                    fEventMult++;
                 }
 
                 if(raw_det_nbr >= 3 && raw_det_nbr <= 41)
@@ -341,6 +343,7 @@ void Sorter::FillCoincBranches(Double_t backward_window, Double_t forward_window
                     fMonsterPlastic_tCond.push_back((Double_t)raw_time / 1.e9); //mili;
                     fMonsterPlastic_Id.push_back(raw_det_nbr);
                     fMonsterPlastic_Mult++;
+                    fEventMult++;
                 }
 
                 if(raw_det_nbr >= 43 && raw_det_nbr <= 45)
@@ -350,6 +353,7 @@ void Sorter::FillCoincBranches(Double_t backward_window, Double_t forward_window
                     fGePlastic_tCond.push_back((Double_t)raw_time / 1.e9); //mili;
                     fGePlastic_Id.push_back(raw_det_nbr);
                     fGePlastic_Mult++;
+                    fEventMult++;
                 }
             }    
         }
@@ -373,6 +377,7 @@ void Sorter::FillCoincBranches(Double_t backward_window, Double_t forward_window
                     fMrBigPlastic_ECond.push_back(MrBig_alignement(raw_energy1));
                     fMrBigPlastic_tCond.push_back((Double_t)raw_time / 1.e9); //mili;
                     fMrBigPlastic_Mult++;
+                    fEventMult++;
                 }
 
                 if(raw_det_nbr >= 3 && raw_det_nbr <= 41)
@@ -384,6 +389,7 @@ void Sorter::FillCoincBranches(Double_t backward_window, Double_t forward_window
                     fMonsterPlastic_tCond.push_back((Double_t)raw_time / 1.e9); //mili;
                     fMonsterPlastic_Id.push_back(raw_det_nbr);
                     fMonsterPlastic_Mult++;
+                    fEventMult++;
                 }
 
                 if(raw_det_nbr >= 43 && raw_det_nbr <= 45)
@@ -393,6 +399,7 @@ void Sorter::FillCoincBranches(Double_t backward_window, Double_t forward_window
                     fGePlastic_tCond.push_back((Double_t)raw_time / 1.e9); //mili;
                     fGePlastic_Id.push_back(raw_det_nbr);
                     fGePlastic_Mult++;
+                    fEventMult++;
                 }
 
                 double_events_check.push_back(fEntry + eventafter);
@@ -406,18 +413,3 @@ void Sorter::FillCoincBranches(Double_t backward_window, Double_t forward_window
         std::cout << std::setprecision(3) << std::setw(5) << (100.*fEntry/fEntries) << " %\r";
     }
 }
-
-//******************************************************************************
-//******************************************************************************
-
-int main(int argc, char** argv){
-    if(argc=!3)
-    {
-        cout << "Wrong number of arguments" << endl;
-        return -1;
-    }
-    Sorter(argv[1], argv[2]);
-    return 0;
-}
-
-
