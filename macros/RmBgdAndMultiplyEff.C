@@ -11,12 +11,14 @@ void RmBgdAndMultiplyEff()
     //pad2->Draw();
     
     TFile *fileeff = TFile::Open("~/phd/analysis/monster25/root_files/effmonster.root", "READ");
+    TFile *fileeffplastic = TFile::Open("~/phd/analysis/monster25/root_files/effplastic.root", "READ");
     TFile *filehist = TFile::Open("~/phd/analysis/monster25/root_files/E_Spectrum_82Ga_1125.root", "READ");
     TFile *filemanhart = TFile::Open("~/phd/analysis/monster25/root_files/manhart.root", "READ");
     TFile *filebgd_manual = TFile::Open("~/phd/analysis/monster25/root_files/BgdModel.root", "READ");
     TFile *fileibu = TFile::Open("/home/emile/phd/analysis/mcnp_tetra/root_files/tests_regina/gaibu.root", "READ");
 
     TGraph* grapheff = (TGraph*)fileeff->Get("Graph");
+    TGraph* grapheffpla = (TGraph*)fileeffplastic->Get("Graph");
     TGraph* graphmanhart = (TGraph*)filemanhart->Get("g1");
     TH1D* hist_all = (TH1D*)filehist->Get("hist_all");
     TH1D* hist_bgd = (TH1D*)filehist->Get("hist_bgd");
@@ -35,9 +37,10 @@ void RmBgdAndMultiplyEff()
     
     hist_resi->Reset();
     
-    for(int i=0; i<= hist_all->GetNbinsX(); i++)
+    for(int i=0; i<= 28; i++)
     {
-        hist_all->SetBinContent(i, hist_all->GetBinContent(i)/grapheff->Eval(hist_all->GetBinCenter(i)));
+        //hist_all->SetBinContent(i, hist_all->GetBinContent(i)/grapheff->Eval(hist_all->GetBinCenter(i)));
+        hist_all->SetBinContent(i, hist_all->GetBinContent(i)/((grapheff->Eval(hist_all->GetBinCenter(i)))*grapheffpla->Eval(5.290-hist_all->GetBinCenter(i))));
     }
     
     for(int i=0; i<= hist_all->GetNbinsX(); i++)
@@ -51,7 +54,6 @@ void RmBgdAndMultiplyEff()
     
     hist_ibu->Draw("hist");
     //graphmanhart->Draw("same");
-
     hist_all->Draw("sameshist");
 
     TLegend* legend = new TLegend(0.1,0.7,0.3,0.9);
