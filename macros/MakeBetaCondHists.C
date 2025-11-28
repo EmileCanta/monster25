@@ -3,9 +3,9 @@ void MakeBetaCondHists()
     
     TH1D *hist[4];
 
-    TFile *filein = TFile::Open("/Users/cantacuzene/data/monster25/runs/sorted/82Ga/AllRuns.root", "READ");
+    TFile *filein = TFile::Open("/home/emile/phd/data/monster25/sorted/82Ga/AllRuns.root", "READ");
 
-    TFile *fileout = new TFile("Hists.root","UPDATE");
+    TFile *fileout = new TFile("Hists.root","RECREATE");
 
     TTree* tree = (TTree*)filein->Get("tcoinc");;
     
