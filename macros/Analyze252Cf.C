@@ -23,7 +23,7 @@ void Analyze252Cf()
     
     double windowback = 25.; //Corresponds to Eneut = 20.7 MeV
     double windowfront = 216.; //Corresponds to Eneut = 280 kev (threshold)
-    int nbins_tof = 120; //Bin width equal to sigma_t = 1.6
+    int nbins_tof = 174; //Bin width equal to sigma =  1.1 ns
 
     tree->SetBranchAddress("MonsterPlastic_tDiff", &tdiff);
     tree->SetBranchAddress("MonsterPlastic_Q3Cond",&nrj3);
@@ -116,7 +116,7 @@ void Analyze252Cf()
 
             for(int ks = 0; ks<NsmearPerBin; ++ks)
             {
-                double t_sample = gRandom->Gaus(t_center*1e-9, 1.6e-9);
+                double t_sample = gRandom->Gaus(t_center*1e-9, 1.1e-9);
 
                 if(t_sample <= 0) continue;
 
