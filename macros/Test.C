@@ -1,14 +1,15 @@
 Double_t f1(Double_t *x, Double_t *par)
 {
-    return 1.98648e2;;
+    return 1.98648e2; //For 82Ga
+    //return 359.277; //For 252Cf
 }
 
 void Test()
 {	
     TFile *fileeffmon = TFile::Open("~/phd/analysis/monster25/root_files/effmonster.root", "READ");
     TFile *fileeffpla = TFile::Open("~/phd/analysis/monster25/root_files/effplastic.root", "READ");
-    //TFile *filein = TFile::Open("~/phd/data/monster25/sorted/82Ga/AllRuns.root", "READ");  //For 82Ga
-    TFile *filein = TFile::Open("~/phd/data/monster25/sorted/cfruns/RUN111.root", "READ"); //For 252Cf
+    TFile *filein = TFile::Open("~/phd/data/monster25/sorted/82Ga/AllRuns.root", "READ");  //For 82Ga
+    //TFile *filein = TFile::Open("~/phd/data/monster25/sorted/cfruns/RUN111.root", "READ"); //For 252Cf
     
     TGraph* grapheffmon = (TGraph*)fileeffmon->Get("Graph");
     TGraph* grapheffpla = (TGraph*)fileeffpla->Get("Graph");
@@ -17,8 +18,8 @@ void Test()
     
     TCutG *cut = new TCutG();
     
-    //TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/82Ga_ana.root","RECREATE");
-    TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/252Cf_ana.root","RECREATE");
+    TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/82Ga_ana.root","RECREATE");
+    //TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/252Cf_ana.root","RECREATE");
     
     TTree* tree = (TTree*)filein->Get("tcoinc");
     
@@ -29,8 +30,9 @@ void Test()
 
     for(int i=1; i<=625; i++)
 	{
-		hist_model_bgd->SetBinContent(i,function->Eval((float)i*0.3125));
-		hist_model_bgd->SetBinError(i,1.33777);
+		hist_model_bgd->SetBinContent(i,function->Eval((float)i);
+		hist_model_bgd->SetBinError(i,1.33777); //For 82Ga
+		//hist_model_bgd->SetBinError(i,5.87085); //For 252Cf
 	}
 
     TString name;
@@ -52,9 +54,9 @@ void Test()
 
     int fEntries = tree->GetEntries();
 
-    //double windowback = 50; //For 82Ga
-    double windowback = 25; //For 252Cf
-    double windowfront = 200;
+    double windowback = 50; //For 82Ga
+    //double windowback = 25; //For 252Cf
+    double windowfront = 300;
 
     for(int j = 0; j < fEntries; j++)
     {
@@ -72,7 +74,7 @@ void Test()
 
                     if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= -windowfront && tdiff->at(k) <=-windowback && mult <= 3)
                     {
-                        hist_tof_bgd->Fill(tdiff->at(k));
+                        hist_tof_bgd->Fill(abs(tdiff->at(k)));
                     }
 
                     if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= windowback && tdiff->at(k) <= windowfront && mult <= 3)
@@ -90,9 +92,9 @@ void Test()
     }
 
     TH1D* hist_tof_sub = (TH1D*)hist_tof_all->Clone("hist_tof_sub");
-    
-    //hist_tof_sub->Add(hist_model_bgd,-1); //For 82Ga
-    hist_tof_sub->Add(hist_tof_bgd,-1); //For 252Cf
+   
+    hist_tof_sub->Add(hist_model_bgd,-1); //For 82Ga
+    //hist_tof_sub->Add(hist_tof_bgd,-1); //For 252Cf
 
     TH1D* hist_E = new TH1D("hist_E", "hist_E", 500, 0, 20);
 
@@ -104,20 +106,20 @@ void Test()
 
     int NtoysPerBin = 2000;
 
-    for(int ib=1; ib<=hist_tof_all->GetNbinsX(); ++ib)
+    for(int ib=1; ib<=hist_tof_sub->GetNbinsX(); ++ib)
     {
-        double Ni = hist_tof_all->GetBinContent(ib);
-        double errNi = hist_tof_all->GetBinError(ib);
+        double Ni = hist_tof_sub->GetBinContent(ib);
+        double errNi = hist_tof_sub->GetBinError(ib);
         
         if (Ni <= 0) continue;
 
-        double t_center = hist_tof_all->GetXaxis()->GetBinCenter(ib);
+        double t_center = hist_tof_sub->GetXaxis()->GetBinCenter(ib);
 
         double weight = Ni / double(NtoysPerBin);
 
         for(int k=0; k<NtoysPerBin; ++k)
         {
-            double t_sample = gRandom->Gaus(t_center*1e-9, 2.1e-9);
+            double t_sample = gRandom->Gaus(t_center*1e-9, 1.6e-9);
             
             double K = joultoMeV * 0.5 * massn * d * d / (t_sample * t_sample);
             
@@ -133,8 +135,16 @@ void Test()
     Int_t NtoyMon = 2000;
 
     TH1D* hist_E_corrected_mon = (TH1D*)hist_E->Clone("hist_E_corrected_mon");
+    TH1D* hist_E_corrected_mon_simpleway = (TH1D*)hist_E->Clone("hist_E_corrected_mon_simpleway");
     hist_E_corrected_mon->Reset(); 
-
+    hist_E_corrected_mon_simpleway->Reset(); 
+    
+    for(int i=0; i<= hist_E->GetNbinsX(); i++)
+    {
+        hist_E_corrected_mon_simpleway->SetBinContent(i, hist_E->GetBinContent(i)/grapheffmon->Eval(hist_E->GetBinCenter(i)));
+    
+    }
+     
     const int nBins = hist_E->GetNbinsX();
     const int nPoints = grapheffmon->GetN();
 
