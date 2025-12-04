@@ -1,15 +1,8 @@
-Double_t f1(Double_t *x, Double_t *par)
-{
-    return 1.98648e2; //For 82Ga
-    //return 359.277; //For 252Cf
-}
-
-void Test()
+void Analyze82Ga()
 {	
     TFile *fileeffmon = TFile::Open("~/phd/analysis/monster25/root_files/effmonster.root", "READ");
     TFile *fileeffpla = TFile::Open("~/phd/analysis/monster25/root_files/effplastic.root", "READ");
-    TFile *filein = TFile::Open("~/phd/data/monster25/sorted/82Ga/AllRuns.root", "READ");  //For 82Ga
-    //TFile *filein = TFile::Open("~/phd/data/monster25/sorted/cfruns/RUN111.root", "READ"); //For 252Cf
+    TFile *filein = TFile::Open("~/phd/data/monster25/sorted/82Ga/AllRuns.root", "READ");
     
     TGraph* grapheffmon = (TGraph*)fileeffmon->Get("Graph");
     TGraph* grapheffpla = (TGraph*)fileeffpla->Get("Graph");
@@ -19,22 +12,9 @@ void Test()
     TCutG *cut = new TCutG();
     
     TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/82Ga_ana.root","RECREATE");
-    //TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/252Cf_ana.root","RECREATE");
     
     TTree* tree = (TTree*)filein->Get("tcoinc");
     
-    TF1* function = new TF1("f1", f1, 0, 20);
-
-    TH1D *hist_model_bgd = new TH1D("hist_model_bgd", "hist_model_bgd", 625, -1000, 1000);
-    hist_model_bgd->Sumw2();
-
-    for(int i=1; i<=625; i++)
-	{
-		hist_model_bgd->SetBinContent(i,function->Eval((float)i);
-		hist_model_bgd->SetBinError(i,1.33777); //For 82Ga
-		//hist_model_bgd->SetBinError(i,5.87085); //For 252Cf
-	}
-
     TString name;
     
     std::vector<double> *tdiff = 0;
@@ -42,22 +22,25 @@ void Test()
     std::vector<double> *nrj3 = 0;
     std::vector<double> *label = 0;
     Int_t mult;
-
+    
+    double windowback = 52.; //Corresponds to Eneut = 4.8 MeV (monster efficiency curve max)
+    double windowfront = 216.; //Corresponds to Eneut = 280 kev (threshold)
+    int nbins_tof = 103; //Bin width equal to sigma_t = 1.6
+    
     tree->SetBranchAddress("MonsterPlastic_tDiff", &tdiff);
     tree->SetBranchAddress("MonsterPlastic_Q3Cond",&nrj3);
     tree->SetBranchAddress("MonsterPlastic_Q2Cond",&nrj2);
     tree->SetBranchAddress("MonsterPlastic_Id",&label);
     tree->SetBranchAddress("MonsterPlastic_Mult",&mult);
 
-    TH1D *hist_tof_all = new TH1D("hist_tof_all", "hist_tof_all", 625, -1000, 1000);
-    TH1D *hist_tof_bgd = new TH1D("hist_tof_bgd", "hist_tof_bgd", 625, -1000, 1000);
+    TH1D *hist_tof_all = new TH1D("hist_tof_all", "hist_tof_all", nbins_tof, windowback, windowfront);
+    TH1D *hist_tof_bgd = new TH1D("hist_tof_bgd", "hist_tof_bgd", nbins_tof, windowback, windowfront);
+    
+    hist_tof_all->Sumw2();
+    hist_tof_bgd->Sumw2();
 
     int fEntries = tree->GetEntries();
-
-    double windowback = 50; //For 82Ga
-    //double windowback = 25; //For 252Cf
-    double windowfront = 300;
-
+    
     for(int j = 0; j < fEntries; j++)
     {
         tree->GetEntry(j);
@@ -90,60 +73,90 @@ void Test()
         std::cout << std::setprecision(3) << std::setw(5) << (100.*j/fEntries) << " %\r";
 
     }
-
-    TH1D* hist_tof_sub = (TH1D*)hist_tof_all->Clone("hist_tof_sub");
-   
-    hist_tof_sub->Add(hist_model_bgd,-1); //For 82Ga
-    //hist_tof_sub->Add(hist_tof_bgd,-1); //For 252Cf
-
-    TH1D* hist_E = new TH1D("hist_E", "hist_E", 500, 0, 20);
-
-    hist_E->Sumw2();
     
     double massn = 1.67492750056e-27;
     double joultoMeV = 6.241509343260e12;
     double d = 1.575;
 
-    int NtoysPerBin = 2000;
+    double sigma_bkg = 7;
+    double bkgPerBin = 113;
 
-    for(int ib=1; ib<=hist_tof_sub->GetNbinsX(); ++ib)
+    int NsmearPerBin = 50;
+
+    int Ntoys = 2000;
+    
+    TRandom3 random(0);
+    
+    TH1D* hSum = new TH1D("hSum", "hSum", 500, 0, 20);
+    hSum->Sumw2();
+
+    TH1D* hSum2 = (TH1D*)hSum->Clone("hSum2");
+
+    for(int it = 0; it < Ntoys; ++it)
     {
-        double Ni = hist_tof_sub->GetBinContent(ib);
-        double errNi = hist_tof_sub->GetBinError(ib);
+        double delta_bkg = random.Gaus(0.0, sigma_bkg);
         
-        if (Ni <= 0) continue;
+        TH1D hToy("hToy", "hToy", 500, 0, 20);
+        hToy.Sumw2();
 
-        double t_center = hist_tof_sub->GetXaxis()->GetBinCenter(ib);
-
-        double weight = Ni / double(NtoysPerBin);
-
-        for(int k=0; k<NtoysPerBin; ++k)
+        for(int ib=1; ib<=hist_tof_all->GetNbinsX(); ++ib)
         {
-            double t_sample = gRandom->Gaus(t_center*1e-9, 1.6e-9);
+            double Ndata_nom = hist_tof_all->GetBinContent(ib);
+            double Ndata_toy = random.Poisson(Ndata_nom);
+
+            double Ni_toy = Ndata_toy - (bkgPerBin + delta_bkg);
             
-            double K = joultoMeV * 0.5 * massn * d * d / (t_sample * t_sample);
-            
-            hist_E->Fill(K, weight);
+            //Ni_toy = max(0.0, Ni_toy);
+
+            //if(Ni_toy > 0) cout << Ndata_nom << " " << Ndata_toy << " " << delta_bkg << " " << Ni_toy << endl;
+        
+            if (Ni_toy == 0) continue;
+
+            double weight_per_smear = Ni_toy / double(NsmearPerBin);
+
+            for(int ks = 0; ks<NsmearPerBin; ++ks)
+            {
+                double t_center = hist_tof_all->GetXaxis()->GetBinCenter(ib);
+                double t_sample = gRandom->Gaus(t_center*1e-9, 1.6e-9);
+
+                if(t_sample <= 0) continue;
+
+                double K = joultoMeV * 0.5 * massn * d * d / (t_sample * t_sample);
+
+                hToy.Fill(K, weight_per_smear);
+            }
+        }
+
+        for(int kb = 1; kb <= 500; ++kb)
+        {
+            double v = hToy.GetBinContent(kb);
+            hSum->AddBinContent(kb, v);
+            hSum2->AddBinContent(kb, v*v);
         }
     }
-
-    TGraph* graphtoysmon = new TGraph();
-    graphtoysmon->SetTitle("graphtoysmon");
     
-    TRandom3* rnd = new TRandom3(0);
+    TH1D* hist_E = (TH1D*)hSum->Clone("hist_E");
+    hist_E->Reset();
 
-    Int_t NtoyMon = 2000;
+    for(int kb = 1; kb <= 500; ++kb)
+    {
+        double mean = hSum->GetBinContent(kb) / double(Ntoys);
+        double mean2 = hSum2->GetBinContent(kb) / double(Ntoys);
+        double var = mean2 - mean * mean;
+
+        if (var < 0 && var > -1e-18) var = 0;
+        double rms = (var > 0) ? sqrt(var) : 0.0;
+
+        hist_E->SetBinContent(kb, mean);
+        hist_E->SetBinError(kb, rms);
+    }
+
+    TRandom3* rnd = new TRandom3(0);
+    
+    Int_t NtoysMon = 2000;
 
     TH1D* hist_E_corrected_mon = (TH1D*)hist_E->Clone("hist_E_corrected_mon");
-    TH1D* hist_E_corrected_mon_simpleway = (TH1D*)hist_E->Clone("hist_E_corrected_mon_simpleway");
-    hist_E_corrected_mon->Reset(); 
-    hist_E_corrected_mon_simpleway->Reset(); 
-    
-    for(int i=0; i<= hist_E->GetNbinsX(); i++)
-    {
-        hist_E_corrected_mon_simpleway->SetBinContent(i, hist_E->GetBinContent(i)/grapheffmon->Eval(hist_E->GetBinCenter(i)));
-    
-    }
+    hist_E_corrected_mon->Reset();
      
     const int nBins = hist_E->GetNbinsX();
     const int nPoints = grapheffmon->GetN();
@@ -155,39 +168,53 @@ void Test()
     std::vector<double> sumInv2(nBins+1, 0.0);
 
     std::vector<double> gx(nPoints), gy(nPoints), gey(nPoints);
-    for (int i=0;i<nPoints;++i) {
+    
+    for(int i=0;i<nPoints;++i)
+    {
         grapheffmon->GetPoint(i, gx[i], gy[i]);
         
         gey[i] = grapheffmon->GetErrorY(i);
-        //cout << gy[i] << endl;
     }
 
-    for (int itoy=0; itoy<NtoyMon; ++itoy) {
+    for(int itoy=0; itoy<NtoysMon; ++itoy)
+    {
         std::vector<double> toyY(nPoints);
-        for (int ip=0; ip<nPoints; ++ip) {
+        
+        for(int ip=0; ip<nPoints; ++ip)
+        {
             double sigma = gey[ip];
-            toyY[ip] = (sigma > 0.0) ? gy[ip] + rnd->Uniform(-sigma, sigma) : gy[ip];
-            graphtoysmon->AddPoint(gx[ip],toyY[ip]);
+            toyY[ip] = (sigma > 0.0) ? gy[ip] + rnd->Uniform(0.0, sigma) : gy[ip];
         }
 
-        for (int ib=1; ib<=nBins; ++ib) {
+        for(int ib=1; ib<=nBins; ++ib)
+        {
             double xBin = hist_E->GetXaxis()->GetBinCenter(ib);
-            //cout << xBin << endl;
             double scale = 0.0;
-            if (xBin <= gx.front()) {
+            
+            if(xBin <= gx.front())
+            {
                 scale = toyY.front();
-
-                //cout << "IIII" << endl;
-            } else if (xBin >= gx.back()) {
+            }
+            
+            else if(xBin >= gx.back())
+            {
                 scale = toyY.back();
-            } else {
+            }
+            
+            else
+            {
                 int k = 0;
-                for (int j=0;j<nPoints-1;++j) {
-                    if (xBin >= gx[j] && xBin < gx[j+1]) { k = j; break; }
+                
+                for(int j=0;j<nPoints-1;++j)
+                
+                {
+                    if(xBin >= gx[j] && xBin < gx[j+1]) { k = j; break; }
                 }
+                
                 double x0 = gx[k], x1 = gx[k+1];
                 double y0 = toyY[k], y1 = toyY[k+1];
                 double t = (xBin - x0) / (x1 - x0);
+                
                 scale = y0 + t*(y1 - y0);
             }
 
@@ -202,26 +229,29 @@ void Test()
         }
     }
 
-    for (int ib=1; ib<=nBins; ++ib) {
-       double mean = sum[ib] / double(NtoyMon);
-       double mean2 = sum2[ib] / double(NtoyMon);
+    for(int ib=1; ib<=nBins; ++ib)
+    {
+       double mean = sum[ib] / double(NtoysMon);
+       double mean2 = sum2[ib] / double(NtoysMon);
        double var = mean2 - mean*mean;
-       if (var < 0 && var > -1e-18) var = 0;
+       
+       if(var < 0 && var > -1e-18) var = 0;
+       
        double rms = (var>0) ? sqrt(var) : 0.0;
 
        double sigmaC = hist_E->GetBinError(ib);
 
-       double meanInv2 = sumInv2[ib] / double(NtoyMon);   
+       double meanInv2 = sumInv2[ib] / double(NtoysMon);   
     
        double sigma_from_original = sigmaC * sqrt(meanInv2);
        double total_err = sqrt(rms*rms + sigma_from_original*sigma_from_original);
-          
-       //cout << sigmaC << " " << sigma_from_original << " " << rms << " " << total_err << endl;
-       //cout << total_err/mean << endl;
        
        hist_E_corrected_mon->SetBinContent(ib, mean);
        hist_E_corrected_mon->SetBinError(ib, total_err);
     }
+
+    delete hSum2;
+    delete hSum;
     
     fileout->Write();
 }
