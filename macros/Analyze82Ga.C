@@ -25,7 +25,7 @@ void Analyze82Ga()
     
     double windowback = 52.; //Corresponds to Eneut = 4.8 MeV (monster efficiency curve max)
     double windowfront = 216.; //Corresponds to Eneut = 280 kev (threshold)
-    int nbins_tof = 149; //Bin width equal to sigma = 1.1 ns
+    int nbins_tof = 126; //Bin width equal to sigma = 1.3 ns
     
     tree->SetBranchAddress("MonsterPlastic_tDiff", &tdiff);
     tree->SetBranchAddress("MonsterPlastic_Q3Cond",&nrj3);
@@ -78,8 +78,8 @@ void Analyze82Ga()
     double joultoMeV = 6.241509343260e12;
     double d = 1.575;
 
-    double sigma_bkg = 7;
-    double bkgPerBin = 113;
+    double sigma_bkg = 4.5;
+    double bkgPerBin = 90;
 
     int NsmearPerBin = 50;
 
@@ -117,7 +117,7 @@ void Analyze82Ga()
             for(int ks = 0; ks<NsmearPerBin; ++ks)
             {
                 double t_center = hist_tof_all->GetXaxis()->GetBinCenter(ib);
-                double t_sample = gRandom->Gaus(t_center*1e-9, 1.1e-9);
+                double t_sample = gRandom->Gaus(t_center*1e-9, 1.3e-9/2.);
 
                 if(t_sample <= 0) continue;
 

@@ -116,7 +116,7 @@ void Analyze252Cf()
 
             for(int ks = 0; ks<NsmearPerBin; ++ks)
             {
-                double t_sample = gRandom->Gaus(t_center*1e-9, 1.1e-9);
+                double t_sample = gRandom->Gaus(t_center*1e-9, 1.1e-9/2.);
 
                 if(t_sample <= 0) continue;
 
