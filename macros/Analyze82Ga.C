@@ -234,7 +234,7 @@ void Analyze82Ga()
        double mean = sum[ib] / double(NtoysMon);
        double mean2 = sum2[ib] / double(NtoysMon);
        double var = mean2 - mean*mean;
-       
+
        if(var < 0 && var > -1e-18) var = 0;
        
        double rms = (var>0) ? sqrt(var) : 0.0;
@@ -249,7 +249,105 @@ void Analyze82Ga()
        hist_E_corrected_mon->SetBinContent(ib, mean);
        hist_E_corrected_mon->SetBinError(ib, total_err);
     }
+    
+    Int_t NtoysPla = 2000;
+    double Qbeta = 5.290;
 
+    TH1D* hist_E_corrected_MonAndPla = (TH1D*)hist_E_corrected_mon->Clone("hist_E_corrected_MonAndPla");
+    hist_E_corrected_MonAndPla->Reset();
+     
+    const int nPointsPla = grapheffpla->GetN();
+
+    std::vector<double> sumpla(Bins+1, 0.0);
+    std::vector<double> sum2pla(nBins+1, 0.0);
+    
+    std::vector<double> sumInvpla(nBins+1, 0.0);
+    std::vector<double> sumInv2pla(nBins+1, 0.0);
+
+    std::vector<double> gxpla(nPoints), gypla(nPoints), geypla(nPoints);
+    
+    for(int i=0;i<nPointsPla;++i)
+    {
+        grapheffpla->GetPoint(i, gxpla[i], gypla[i]);
+        
+        geypla[i] = grapheffpla->GetErrorY(i);
+    }
+
+    for(int itoy=0; itoy<NtoysPla; ++itoy)
+    {
+        std::vector<double> toyY(nPoints);
+        
+        for(int ip=0; ip<nPointsPla; ++ip)
+        {
+            double sigma = geypla[ip];
+            toyY[ip] = (sigma > 0.0) ? gypla[ip] + rnd->Uniform(0.0, sigma) : gypla[ip];
+        }
+
+        for(int ib=1; ib<=nBins; ++ib)
+        {
+            double xBin = hist_E_corrected_mon->GetXaxis()->GetBinCenter(ib);
+            double xBinMinusQbeta = Qbeta - xBin;
+            double scale = 0.0;
+            
+            if(xBinMinusQbeta <= gxpla.front())
+            {
+                scale = toyY.front();
+            }
+            
+            else if(xBinMinusQbeta >= gxpla.back())
+            {
+                scale = toyY.back();
+            }
+            
+            else
+            {
+                int k = 0;
+                
+                for(int j=0;j<nPointspla-1;++j)
+                
+                {
+                    if(xBinMinusQbeta >= gxpla[j] && xBinMinusQbeta < gxpla[j+1]) { k = j; break; }
+                }
+                
+                double x0 = gxpla[k], x1 = gxpla[k+1];
+                double y0 = toyY[k], y1 = toyY[k+1];
+                double t = (xBinMinusQbeta - x0) / (x1 - x0);
+                
+                scale = y0 + t*(y1 - y0);
+            }
+
+            double inv = 1. / scale;
+            double C = hist_E_corrected_mon->GetBinContent(ib);
+            double val = C * inv;
+
+            sumpla[ib]  += val;
+            sum2pla[ib] += val*val;
+            sumInvpla[ib]  += inv;
+            sumInv2pla[ib] += inv*inv;
+        }
+    }
+
+    for(int ib=1; ib<=nBins; ++ib)
+    {
+       double mean = sum[ib] / double(NtoysPla);
+       double mean2 = sum2[ib] / double(NtoysPla);
+       double var = mean2 - mean*mean;
+
+       if(var < 0 && var > -1e-18) var = 0;
+       
+       double rms = (var>0) ? sqrt(var) : 0.0;
+
+       double sigmaC = hist_E_corrected_mon->GetBinError(ib);
+
+       double meanInv2 = sumInv2[ib] / double(NtoysPla);   
+    
+       double sigma_from_original = sigmaC * sqrt(meanInv2);
+       double total_err = sqrt(rms*rms + sigma_from_original*sigma_from_original);
+       
+       hist_E_corrected_MonAndPla->SetBinContent(ib, mean);
+       hist_E_corrected_MonAndPla->SetBinError(ib, total_err);
+    }
+    
     delete hSum2;
     delete hSum;
     
