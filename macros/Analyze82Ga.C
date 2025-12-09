@@ -41,7 +41,9 @@ void Analyze82Ga()
 
     int fEntries = tree->GetEntries();
     
-    for(int j = 0; j < fEntries; j++)
+    double stats = 1.;
+
+    for(int j = 0; j < fEntries/stats; j++)
     {
         tree->GetEntry(j);
 
@@ -105,10 +107,6 @@ void Analyze82Ga()
             double Ndata_toy = random.Poisson(Ndata_nom);
 
             double Ni_toy = Ndata_toy - (bkgPerBin + delta_bkg);
-            
-            //Ni_toy = max(0.0, Ni_toy);
-
-            //if(Ni_toy > 0) cout << Ndata_nom << " " << Ndata_toy << " " << delta_bkg << " " << Ni_toy << endl;
         
             if (Ni_toy == 0) continue;
 
@@ -117,7 +115,7 @@ void Analyze82Ga()
             for(int ks = 0; ks<NsmearPerBin; ++ks)
             {
                 double t_center = hist_tof_all->GetXaxis()->GetBinCenter(ib);
-                double t_sample = gRandom->Gaus(t_center*1e-9, 1.3e-9/2.);
+                double t_sample = gRandom->Gaus(t_center*1e-9, (1.3e-9)/2.);
 
                 if(t_sample <= 0) continue;
 
@@ -183,7 +181,7 @@ void Analyze82Ga()
         for(int ip=0; ip<nPoints; ++ip)
         {
             double sigma = gey[ip];
-            toyY[ip] = (sigma > 0.0) ? gy[ip] + rnd->Uniform(0.0, sigma) : gy[ip];
+            toyY[ip] = (sigma > 0.0) ? gy[ip] + rnd->Gaus(0.0, sigma) : gy[ip];
         }
 
         for(int ib=1; ib<=nBins; ++ib)
@@ -258,13 +256,13 @@ void Analyze82Ga()
      
     const int nPointsPla = grapheffpla->GetN();
 
-    std::vector<double> sumpla(Bins+1, 0.0);
+    std::vector<double> sumpla(nBins+1, 0.0);
     std::vector<double> sum2pla(nBins+1, 0.0);
     
     std::vector<double> sumInvpla(nBins+1, 0.0);
     std::vector<double> sumInv2pla(nBins+1, 0.0);
 
-    std::vector<double> gxpla(nPoints), gypla(nPoints), geypla(nPoints);
+    std::vector<double> gxpla(nPointsPla), gypla(nPointsPla), geypla(nPointsPla);
     
     for(int i=0;i<nPointsPla;++i)
     {
@@ -275,12 +273,12 @@ void Analyze82Ga()
 
     for(int itoy=0; itoy<NtoysPla; ++itoy)
     {
-        std::vector<double> toyY(nPoints);
+        std::vector<double> toyY(nPointsPla);
         
         for(int ip=0; ip<nPointsPla; ++ip)
         {
             double sigma = geypla[ip];
-            toyY[ip] = (sigma > 0.0) ? gypla[ip] + rnd->Uniform(0.0, sigma) : gypla[ip];
+            toyY[ip] = (sigma > 0.0) ? gypla[ip] + rnd->Gaus(0.0, sigma) : gypla[ip];
         }
 
         for(int ib=1; ib<=nBins; ++ib)
@@ -303,7 +301,7 @@ void Analyze82Ga()
             {
                 int k = 0;
                 
-                for(int j=0;j<nPointspla-1;++j)
+                for(int j=0;j<nPointsPla-1;++j)
                 
                 {
                     if(xBinMinusQbeta >= gxpla[j] && xBinMinusQbeta < gxpla[j+1]) { k = j; break; }
@@ -315,7 +313,7 @@ void Analyze82Ga()
                 
                 scale = y0 + t*(y1 - y0);
             }
-
+            
             double inv = 1. / scale;
             double C = hist_E_corrected_mon->GetBinContent(ib);
             double val = C * inv;
@@ -329,8 +327,8 @@ void Analyze82Ga()
 
     for(int ib=1; ib<=nBins; ++ib)
     {
-       double mean = sum[ib] / double(NtoysPla);
-       double mean2 = sum2[ib] / double(NtoysPla);
+       double mean = sumpla[ib] / double(NtoysPla);
+       double mean2 = sum2pla[ib] / double(NtoysPla);
        double var = mean2 - mean*mean;
 
        if(var < 0 && var > -1e-18) var = 0;
@@ -339,7 +337,7 @@ void Analyze82Ga()
 
        double sigmaC = hist_E_corrected_mon->GetBinError(ib);
 
-       double meanInv2 = sumInv2[ib] / double(NtoysPla);   
+       double meanInv2 = sumInv2pla[ib] / double(NtoysPla);   
     
        double sigma_from_original = sigmaC * sqrt(meanInv2);
        double total_err = sqrt(rms*rms + sigma_from_original*sigma_from_original);
