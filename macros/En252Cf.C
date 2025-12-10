@@ -1,80 +1,14 @@
-void Analyze252Cf()
+void En252Cf()
 {	
     TFile *fileeffmon = TFile::Open("~/phd/analysis/monster25/root_files/effmonster.root", "READ");
-    TFile *filein = TFile::Open("~/phd/data/monster25/sorted/cfruns/RUN111.root", "READ");
+    TFile *filein = TFile::Open("~/phd/analysis/monster25/root_files/ToF252Cf.root", "READ");
     
     TGraph* grapheffmon = (TGraph*)fileeffmon->Get("Graph");
-
-    TFile *cutfile = TFile::Open("~/phd/analysis/monster25/root_files/cutfile.root","READ");
     
-    TCutG *cut = new TCutG();
+    TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/En252Cf.root","RECREATE");
     
-    TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/252Cf_ana.root","RECREATE");
-    
-    TTree* tree = (TTree*)filein->Get("tcoinc");
-    
-    TString name;
-    
-    std::vector<double> *tdiff = 0;
-    std::vector<double> *nrj2 = 0;
-    std::vector<double> *nrj3 = 0;
-    std::vector<double> *label = 0;
-    Int_t mult;
-    
-    double windowback = 25.; //Corresponds to Eneut = 20.7 MeV
-    double windowfront = 216.; //Corresponds to Eneut = 280 kev (threshold)
-    int nbins_tof = 102; //Bin width equal to 2.35*sigma =  1.88 ns
+    TH1D* hist_tof_sub = (TH1D*)filein->Get("hist_tof_sub");
 
-    tree->SetBranchAddress("MonsterPlastic_tDiff", &tdiff);
-    tree->SetBranchAddress("MonsterPlastic_Q3Cond",&nrj3);
-    tree->SetBranchAddress("MonsterPlastic_Q2Cond",&nrj2);
-    tree->SetBranchAddress("MonsterPlastic_Id",&label);
-    tree->SetBranchAddress("MonsterPlastic_Mult",&mult);
-
-    TH1D *hist_tof_all = new TH1D("hist_tof_all", "hist_tof_all", nbins_tof, windowback, windowfront);
-    TH1D *hist_tof_bgd = new TH1D("hist_tof_bgd", "hist_tof_bgd", nbins_tof, windowback, windowfront);
-    
-    hist_tof_all->Sumw2();
-    hist_tof_bgd->Sumw2();
-
-    int fEntries = tree->GetEntries();
-
-    for(int j = 0; j < fEntries; j++)
-    {
-        tree->GetEntry(j);
-
-        for(ULong_t k = 0; k < tdiff->size(); ++k)
-        {
-            for(int l = 3; l <= 41; l++)
-            {   
-                name = Form("cut%d",l);
-
-                if(label->at(k) == l)
-                {
-                    cut = (TCutG*)cutfile->Get(name);
-
-                    if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= -windowfront && tdiff->at(k) <=-windowback && mult <= 3)
-                    {
-                        hist_tof_bgd->Fill(abs(tdiff->at(k)));
-                    }
-
-                    if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= windowback && tdiff->at(k) <= windowfront && mult <= 3)
-                    {
-                        hist_tof_all->Fill(tdiff->at(k));
-                    } 
-
-                    delete cut;
-                }
-            }
-        }
-        
-        std::cout << std::setprecision(3) << std::setw(5) << (100.*j/fEntries) << " %\r";
-    }
-
-    TH1D* hist_tof_sub = (TH1D*)hist_tof_all->Clone("hist_tof_sub");
-
-    hist_tof_sub->Add(hist_tof_bgd,-1);
-    
     double massn = 1.67492750056e-27;
     double joultoMeV = 6.241509343260e12;
     double d = 1.575;
@@ -85,14 +19,14 @@ void Analyze252Cf()
     
     TRandom3 random(0);
     
-    TH1D* hSum = new TH1D("hSum", "hSum", 500, 0, 20);
+    TH1D* hSum = new TH1D("hSum", "hSum", 100, 0, 20);
     hSum->Sumw2();
 
     TH1D* hSum2 = (TH1D*)hSum->Clone("hSum2");
 
     for(int it = 0; it < Ntoys; ++it)
     {
-        TH1D hToy("hToy", "hToy", 500, 0, 20);
+        TH1D hToy("hToy", "hToy", 100, 0, 20);
         hToy.Sumw2();
 
         for(int ib=1; ib<=hist_tof_sub->GetNbinsX(); ++ib)
@@ -116,7 +50,7 @@ void Analyze252Cf()
 
             for(int ks = 0; ks<NsmearPerBin; ++ks)
             {
-                double t_sample = gRandom->Gaus(t_center*1e-9, (2.35*0.8e-9));
+                double t_sample = gRandom->Gaus(t_center*1e-9, (4e-9));
 
                 if(t_sample <= 0) continue;
 
@@ -126,7 +60,7 @@ void Analyze252Cf()
             }
         }
 
-        for(int kb = 1; kb <= 500; ++kb)
+        for(int kb = 1; kb <= 100; ++kb)
         {
             double v = hToy.GetBinContent(kb);
             hSum->AddBinContent(kb, v);
@@ -137,7 +71,7 @@ void Analyze252Cf()
     TH1D* hist_E = (TH1D*)hSum->Clone("hist_E");
     hist_E->Reset();
 
-    for(int kb = 1; kb <= 500; ++kb)
+    for(int kb = 1; kb <= 100; ++kb)
     {
         double mean = hSum->GetBinContent(kb) / double(Ntoys);
         double mean2 = hSum2->GetBinContent(kb) / double(Ntoys);
@@ -253,4 +187,5 @@ void Analyze252Cf()
     delete hSum;
     
     fileout->Write();
+    fileout->Close();
 }

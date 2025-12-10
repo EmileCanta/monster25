@@ -1,87 +1,23 @@
-void Analyze82Ga()
+void En82Ga()
 {	
     TFile *fileeffmon = TFile::Open("~/phd/analysis/monster25/root_files/effmonster.root", "READ");
     TFile *fileeffpla = TFile::Open("~/phd/analysis/monster25/root_files/effplastic.root", "READ");
-    TFile *filein = TFile::Open("~/phd/data/monster25/sorted/82Ga/AllRuns.root", "READ");
+    TFile *filein = TFile::Open("~/phd/analysis/monster25/root_files/ToF82Ga.root", "READ");
     
     TGraph* grapheffmon = (TGraph*)fileeffmon->Get("Graph");
     TGraph* grapheffpla = (TGraph*)fileeffpla->Get("Graph");
 
-    TFile *cutfile = TFile::Open("~/phd/analysis/monster25/root_files/cutfile.root","READ");
-    
-    TCutG *cut = new TCutG();
-    
-    TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/82Ga_ana.root","RECREATE");
-    
-    TTree* tree = (TTree*)filein->Get("tcoinc");
-    
-    TString name;
-    
-    std::vector<double> *tdiff = 0;
-    std::vector<double> *nrj2 = 0;
-    std::vector<double> *nrj3 = 0;
-    std::vector<double> *label = 0;
-    Int_t mult;
-    
-    double windowback = 52.; //Corresponds to Eneut = 4.8 MeV (monster efficiency curve max)
-    double windowfront = 216.; //Corresponds to Eneut = 280 kev (threshold)
-    int nbins_tof = 126; //Bin width equal to sigma = 1.3 ns
-    
-    tree->SetBranchAddress("MonsterPlastic_tDiff", &tdiff);
-    tree->SetBranchAddress("MonsterPlastic_Q3Cond",&nrj3);
-    tree->SetBranchAddress("MonsterPlastic_Q2Cond",&nrj2);
-    tree->SetBranchAddress("MonsterPlastic_Id",&label);
-    tree->SetBranchAddress("MonsterPlastic_Mult",&mult);
+    TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/En82Ga.root","RECREATE");
+   
+    TH1D* hist_tof_all = (TH1D*)filein->Get("hist_tof_all");
+    TH1D* hist_tof_bgd = (TH1D*)filein->Get("hist_tof_bgd");
 
-    TH1D *hist_tof_all = new TH1D("hist_tof_all", "hist_tof_all", nbins_tof, windowback, windowfront);
-    TH1D *hist_tof_bgd = new TH1D("hist_tof_bgd", "hist_tof_bgd", nbins_tof, windowback, windowfront);
-    
-    hist_tof_all->Sumw2();
-    hist_tof_bgd->Sumw2();
-
-    int fEntries = tree->GetEntries();
-    
-    double stats = 1.;
-
-    for(int j = 0; j < fEntries/stats; j++)
-    {
-        tree->GetEntry(j);
-
-        for(ULong_t k = 0; k < tdiff->size(); ++k)
-        {
-            for(int l = 3; l <= 41; l++)
-            {   
-                name = Form("cut%d",l);
-
-                if(label->at(k) == l)
-                {
-                    cut = (TCutG*)cutfile->Get(name);
-
-                    if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= -windowfront && tdiff->at(k) <=-windowback && mult <= 3)
-                    {
-                        hist_tof_bgd->Fill(abs(tdiff->at(k)));
-                    }
-
-                    if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= windowback && tdiff->at(k) <= windowfront && mult <= 3)
-                    {
-                        hist_tof_all->Fill(tdiff->at(k));
-                    } 
-
-                    delete cut;
-                }
-            }
-        }
-        
-        std::cout << std::setprecision(3) << std::setw(5) << (100.*j/fEntries) << " %\r";
-
-    }
-    
     double massn = 1.67492750056e-27;
     double joultoMeV = 6.241509343260e12;
     double d = 1.575;
 
-    double sigma_bkg = 4.5;
-    double bkgPerBin = 90;
+    double sigma_bkg = 20;
+    double bkgPerBin = 289;
 
     int NsmearPerBin = 50;
 
@@ -89,7 +25,7 @@ void Analyze82Ga()
     
     TRandom3 random(0);
     
-    TH1D* hSum = new TH1D("hSum", "hSum", 500, 0, 20);
+    TH1D* hSum = new TH1D("hSum", "hSum", 100, 0, 20);
     hSum->Sumw2();
 
     TH1D* hSum2 = (TH1D*)hSum->Clone("hSum2");
@@ -98,7 +34,7 @@ void Analyze82Ga()
     {
         double delta_bkg = random.Gaus(0.0, sigma_bkg);
         
-        TH1D hToy("hToy", "hToy", 500, 0, 20);
+        TH1D hToy("hToy", "hToy", 100, 0, 20);
         hToy.Sumw2();
 
         for(int ib=1; ib<=hist_tof_all->GetNbinsX(); ++ib)
@@ -115,7 +51,7 @@ void Analyze82Ga()
             for(int ks = 0; ks<NsmearPerBin; ++ks)
             {
                 double t_center = hist_tof_all->GetXaxis()->GetBinCenter(ib);
-                double t_sample = gRandom->Gaus(t_center*1e-9, (1.3e-9)/2.);
+                double t_sample = gRandom->Gaus(t_center*1e-9, 4e-9);
 
                 if(t_sample <= 0) continue;
 
@@ -125,7 +61,7 @@ void Analyze82Ga()
             }
         }
 
-        for(int kb = 1; kb <= 500; ++kb)
+        for(int kb = 1; kb <= 100; ++kb)
         {
             double v = hToy.GetBinContent(kb);
             hSum->AddBinContent(kb, v);
@@ -136,7 +72,7 @@ void Analyze82Ga()
     TH1D* hist_E = (TH1D*)hSum->Clone("hist_E");
     hist_E->Reset();
 
-    for(int kb = 1; kb <= 500; ++kb)
+    for(int kb = 1; kb <= 100; ++kb)
     {
         double mean = hSum->GetBinContent(kb) / double(Ntoys);
         double mean2 = hSum2->GetBinContent(kb) / double(Ntoys);
@@ -350,4 +286,5 @@ void Analyze82Ga()
     delete hSum;
     
     fileout->Write();
+    fileout->Close();
 }
