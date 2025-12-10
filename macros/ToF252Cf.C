@@ -20,7 +20,7 @@ void ToF252Cf()
     
     double windowback = 25.; //Corresponds to Eneut = 20.7 MeV
     double windowfront = 216.; //Corresponds to Eneut = 280 kev (threshold)
-    int nbins_tof = 48; //Bin width equal to 4 ns
+    int nbins_tof = 239;
 
     tree->SetBranchAddress("MonsterPlastic_tDiff", &tdiff);
     tree->SetBranchAddress("MonsterPlastic_Q3Cond",&nrj3);
@@ -50,12 +50,12 @@ void ToF252Cf()
                 {
                     cut = (TCutG*)cutfile->Get(name);
 
-                    if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= -windowfront && tdiff->at(k) <=-windowback && mult <= 3)
+                    if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= -windowfront && tdiff->at(k) <=-windowback)
                     {
                         hist_tof_bgd->Fill(abs(tdiff->at(k)));
                     }
 
-                    if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= windowback && tdiff->at(k) <= windowfront && mult <= 3)
+                    if(cut->IsInside(nrj2->at(k),nrj3->at(k)/nrj2->at(k)) && tdiff->at(k) >= windowback && tdiff->at(k) <= windowfront)
                     {
                         hist_tof_all->Fill(tdiff->at(k));
                     } 

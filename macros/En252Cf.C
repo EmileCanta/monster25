@@ -16,17 +16,23 @@ void En252Cf()
     int NsmearPerBin = 50;
 
     int Ntoys = 2000;
-    
+   
+    int NbinsE = 500;
+    double MaxE = 20.;
+    double MinE = 0.;
+
+    double SmearingVar = 0.8e-9;
+
     TRandom3 random(0);
     
-    TH1D* hSum = new TH1D("hSum", "hSum", 100, 0, 20);
+    TH1D* hSum = new TH1D("hSum", "hSum", NbinsE, MinE, MaxE);
     hSum->Sumw2();
 
     TH1D* hSum2 = (TH1D*)hSum->Clone("hSum2");
 
     for(int it = 0; it < Ntoys; ++it)
     {
-        TH1D hToy("hToy", "hToy", 100, 0, 20);
+        TH1D hToy("hToy", "hToy", NbinsE, MinE, MaxE);
         hToy.Sumw2();
 
         for(int ib=1; ib<=hist_tof_sub->GetNbinsX(); ++ib)
@@ -50,7 +56,7 @@ void En252Cf()
 
             for(int ks = 0; ks<NsmearPerBin; ++ks)
             {
-                double t_sample = gRandom->Gaus(t_center*1e-9, (4e-9));
+                double t_sample = gRandom->Gaus(t_center*1e-9, SmearingVar);
 
                 if(t_sample <= 0) continue;
 
@@ -60,7 +66,7 @@ void En252Cf()
             }
         }
 
-        for(int kb = 1; kb <= 100; ++kb)
+        for(int kb = 1; kb <= NbinsE; ++kb)
         {
             double v = hToy.GetBinContent(kb);
             hSum->AddBinContent(kb, v);
@@ -71,7 +77,7 @@ void En252Cf()
     TH1D* hist_E = (TH1D*)hSum->Clone("hist_E");
     hist_E->Reset();
 
-    for(int kb = 1; kb <= 100; ++kb)
+    for(int kb = 1; kb <= NbinsE; ++kb)
     {
         double mean = hSum->GetBinContent(kb) / double(Ntoys);
         double mean2 = hSum2->GetBinContent(kb) / double(Ntoys);

@@ -23,9 +23,13 @@ void En82Ga()
 
     int Ntoys = 2000;
     
+    int NbinsE = 500;
+    double MaxE = 20.;
+    double MinE = 0.;
+    
     TRandom3 random(0);
     
-    TH1D* hSum = new TH1D("hSum", "hSum", 100, 0, 20);
+    TH1D* hSum = new TH1D("hSum", "hSum", NbinsE, MinE, MaxE);
     hSum->Sumw2();
 
     TH1D* hSum2 = (TH1D*)hSum->Clone("hSum2");
@@ -34,7 +38,7 @@ void En82Ga()
     {
         double delta_bkg = random.Gaus(0.0, sigma_bkg);
         
-        TH1D hToy("hToy", "hToy", 100, 0, 20);
+        TH1D hToy("hToy", "hToy", NbinsE, MinE, MaxE);
         hToy.Sumw2();
 
         for(int ib=1; ib<=hist_tof_all->GetNbinsX(); ++ib)
@@ -61,7 +65,7 @@ void En82Ga()
             }
         }
 
-        for(int kb = 1; kb <= 100; ++kb)
+        for(int kb = 1; kb <= NbinsE; ++kb)
         {
             double v = hToy.GetBinContent(kb);
             hSum->AddBinContent(kb, v);
@@ -72,7 +76,7 @@ void En82Ga()
     TH1D* hist_E = (TH1D*)hSum->Clone("hist_E");
     hist_E->Reset();
 
-    for(int kb = 1; kb <= 100; ++kb)
+    for(int kb = 1; kb <= NbinsE; ++kb)
     {
         double mean = hSum->GetBinContent(kb) / double(Ntoys);
         double mean2 = hSum2->GetBinContent(kb) / double(Ntoys);
