@@ -16,16 +16,18 @@ void En82Ga()
     double joultoMeV = 6.241509343260e12;
     double d = 1.575;
 
-    double sigma_bkg = 20;
-    double bkgPerBin = 289;
+    double sigma_bkg = 2;
+    double bkgPerBin = 85;
 
-    int NsmearPerBin = 50;
+    int NsmearPerBin = 500;
 
-    int Ntoys = 2000;
+    int Ntoys = 5000;
     
     int NbinsE = 500;
     double MaxE = 20.;
     double MinE = 0.;
+    
+    double SmearingVar = 1.2e-9;
     
     TRandom3 random(0);
     
@@ -55,7 +57,7 @@ void En82Ga()
             for(int ks = 0; ks<NsmearPerBin; ++ks)
             {
                 double t_center = hist_tof_all->GetXaxis()->GetBinCenter(ib);
-                double t_sample = gRandom->Gaus(t_center*1e-9, 4e-9);
+                double t_sample = gRandom->Gaus(t_center*1e-9, SmearingVar);
 
                 if(t_sample <= 0) continue;
 
@@ -91,7 +93,7 @@ void En82Ga()
 
     TRandom3* rnd = new TRandom3(0);
     
-    Int_t NtoysMon = 2000;
+    Int_t NtoysMon = 5000;
 
     TH1D* hist_E_corrected_mon = (TH1D*)hist_E->Clone("hist_E_corrected_mon");
     hist_E_corrected_mon->Reset();
@@ -123,6 +125,10 @@ void En82Ga()
             double sigma = gey[ip];
             toyY[ip] = (sigma > 0.0) ? gy[ip] + rnd->Gaus(0.0, sigma) : gy[ip];
         }
+        
+        TGraph* GraphToy = new TGraph(nPoints, &gx[0], &toyY[0]); 
+
+        TSpline3* SplineToy = new TSpline3("SplineToy", GraphToy);
 
         for(int ib=1; ib<=nBins; ++ib)
         {
@@ -141,19 +147,22 @@ void En82Ga()
             
             else
             {
-                int k = 0;
-                
-                for(int j=0;j<nPoints-1;++j)
-                
-                {
-                    if(xBin >= gx[j] && xBin < gx[j+1]) { k = j; break; }
-                }
-                
-                double x0 = gx[k], x1 = gx[k+1];
-                double y0 = toyY[k], y1 = toyY[k+1];
-                double t = (xBin - x0) / (x1 - x0);
-                
-                scale = y0 + t*(y1 - y0);
+                /* int k = 0;
+
+                   for(int j=0;j<nPoints-1;++j)
+
+                   {
+                   if(xBin >= gx[j] && xBin < gx[j+1]) { k = j; break; }
+                   }
+
+                   double x0 = gx[k], x1 = gx[k+1];
+                   double y0 = toyY[k], y1 = toyY[k+1];
+                   double t = (xBin - x0) / (x1 - x0);
+
+                   scale = y0 + t*(y1 - y0); */
+            
+                scale = SplineToy->Eval(xBin);
+
             }
 
             double inv = 1. / scale;
@@ -188,7 +197,7 @@ void En82Ga()
        hist_E_corrected_mon->SetBinError(ib, total_err);
     }
     
-    Int_t NtoysPla = 2000;
+    Int_t NtoysPla = 5000;
     double Qbeta = 5.290;
 
     TH1D* hist_E_corrected_MonAndPla = (TH1D*)hist_E_corrected_mon->Clone("hist_E_corrected_MonAndPla");
@@ -220,7 +229,15 @@ void En82Ga()
             double sigma = geypla[ip];
             toyY[ip] = (sigma > 0.0) ? gypla[ip] + rnd->Gaus(0.0, sigma) : gypla[ip];
         }
+        
+        TGraph* GraphToy = new TGraph(nPointsPla, &gxpla[0], &toyY[0]); 
 
+        TSpline3* SplineToy = new TSpline3("SplineToy", GraphToy);
+        
+        //if(itoy == 0) { SplineToy->Draw(); }
+
+        //else if(itoy % 200 == 0) { SplineToy->Draw("same"); }
+        
         for(int ib=1; ib<=nBins; ++ib)
         {
             double xBin = hist_E_corrected_mon->GetXaxis()->GetBinCenter(ib);
@@ -239,19 +256,22 @@ void En82Ga()
             
             else
             {
-                int k = 0;
-                
-                for(int j=0;j<nPointsPla-1;++j)
-                
-                {
-                    if(xBinMinusQbeta >= gxpla[j] && xBinMinusQbeta < gxpla[j+1]) { k = j; break; }
-                }
-                
-                double x0 = gxpla[k], x1 = gxpla[k+1];
-                double y0 = toyY[k], y1 = toyY[k+1];
-                double t = (xBinMinusQbeta - x0) / (x1 - x0);
-                
-                scale = y0 + t*(y1 - y0);
+                /* int k = 0;
+
+                   for(int j=0;j<nPointsPla-1;++j)
+
+                   {
+                   if(xBinMinusQbeta >= gxpla[j] && xBinMinusQbeta < gxpla[j+1]) { k = j; break; }
+                   }
+
+                   double x0 = gxpla[k], x1 = gxpla[k+1];
+                   double y0 = toyY[k], y1 = toyY[k+1];
+                   double t = (xBinMinusQbeta - x0) / (x1 - x0);
+
+                   scale = y0 + t*(y1 - y0);
+                   */           
+
+                scale = SplineToy->Eval(xBinMinusQbeta);
             }
             
             double inv = 1. / scale;
@@ -285,7 +305,32 @@ void En82Ga()
        hist_E_corrected_MonAndPla->SetBinContent(ib, mean);
        hist_E_corrected_MonAndPla->SetBinError(ib, total_err);
     }
+  
+    hist_E_corrected_MonAndPla->RebinX(5);
+
+    double ResultMean;
+    double ResultMeanErr;
+
+    double meansum = 0.;
+    double sumcontent = 0.;
+    double sumvar = 0.;
     
+    for(int i = hist_E_corrected_MonAndPla->GetXaxis()->FindBin(0.); i <= hist_E_corrected_MonAndPla->GetXaxis()->FindBin(5.2); ++i)
+    {
+        double x = hist_E_corrected_MonAndPla->GetBinCenter(i);
+        double y = hist_E_corrected_MonAndPla->GetBinContent(i);
+        double err = hist_E_corrected_MonAndPla->GetBinError(i);
+
+        meansum += x * y;
+        sumcontent += y;
+        sumvar += (err * err) * (x * x);
+    }
+
+    ResultMean = meansum / sumcontent;
+    ResultMeanErr = sqrt(sumvar) / fabs(sumcontent);
+   
+    cout << "Mean = " << ResultMean << " +/- " << ResultMeanErr << endl;
+
     delete hSum2;
     delete hSum;
     
