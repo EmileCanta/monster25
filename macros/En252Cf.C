@@ -3,7 +3,7 @@ void En252Cf()
     TFile *fileeffmon = TFile::Open("~/phd/analysis/monster25/root_files/effmonster.root", "READ");
     TFile *filein = TFile::Open("~/phd/analysis/monster25/root_files/ToF252Cf.root", "READ");
 
-    TGraph* grapheffmon = (TGraph*)fileeffmon->Get("Graph");
+    TGraph* grapheffmon = (TGraph*)fileeffmon->Get("GraphEffMon");
 
     TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/En252Cf.root","RECREATE");
 
@@ -155,21 +155,6 @@ void En252Cf()
 
             else
             {
-                /* int k = 0;
-
-                   for(int j=0;j<nPoints-1;++j)
-
-                   {
-                   if(xBin >= gx[j] && xBin < gx[j+1]) { k = j; break; }
-                   }
-
-                   double x0 = gx[k], x1 = gx[k+1];
-                   double y0 = toyY[k], y1 = toyY[k+1];
-                   double t = (xBin - x0) / (x1 - x0);
-
-                   scale = y0 + t*(y1 - y0);
-                   */            
-                
                 scale = SplineToy->Eval(xBin);
             }
 
@@ -204,10 +189,33 @@ void En252Cf()
         hist_E_corrected_mon->SetBinContent(ib, mean);
         hist_E_corrected_mon->SetBinError(ib, total_err);
     }
+    
+    double ResultMean;
+    double ResultMeanErr;
+
+    double meansum = 0.;
+    double sumcontent = 0.;
+    double sumvar = 0.;
+    
+    for(int i = hist_E_corrected_mon->GetXaxis()->FindBin(0.); i <= hist_E_corrected_mon->GetXaxis()->FindBin(10.); ++i)
+    {
+        double x = hist_E_corrected_mon->GetBinCenter(i);
+        double y = hist_E_corrected_mon->GetBinContent(i);
+        double err = hist_E_corrected_mon->GetBinError(i);
+
+        meansum += x * y;
+        sumcontent += y;
+        sumvar += (err * err) * (x * x);
+    }
+
+    ResultMean = meansum / sumcontent;
+    ResultMeanErr = sqrt(sumvar) / fabs(sumcontent);
+  
+    cout << "Mean = " << ResultMean << " +/- " << ResultMeanErr << endl;
 
     delete hSum2;
     delete hSum;
 
     fileout->Write();
-    //fileout->Close();
+    fileout->Close();
 }

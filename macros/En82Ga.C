@@ -4,7 +4,7 @@ void En82Ga()
     TFile *fileeffpla = TFile::Open("~/phd/analysis/monster25/root_files/effplastic.root", "READ");
     TFile *filein = TFile::Open("~/phd/analysis/monster25/root_files/ToF82Ga.root", "READ");
     
-    TGraph* grapheffmon = (TGraph*)fileeffmon->Get("Graph");
+    TGraph* grapheffmon = (TGraph*)fileeffmon->Get("GraphEffMon");
     TGraph* grapheffpla = (TGraph*)fileeffpla->Get("Graph");
 
     TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/En82Ga.root","RECREATE");
@@ -306,7 +306,7 @@ void En82Ga()
        hist_E_corrected_MonAndPla->SetBinError(ib, total_err);
     }
   
-    hist_E_corrected_MonAndPla->RebinX(5);
+    //hist_E_corrected_MonAndPla->RebinX(5);
 
     double ResultMean;
     double ResultMeanErr;
