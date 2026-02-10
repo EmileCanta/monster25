@@ -30,7 +30,7 @@ void PlotData()
 
         if(file.eof()) break;
 
-        g1->AddPoint(x,y);
+        g1->AddPoint(x/1e6,y*1e6);
     }
 
 g1->Draw();

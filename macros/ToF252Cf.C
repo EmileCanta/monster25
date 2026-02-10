@@ -31,8 +31,8 @@ void ToF252Cf()
     TH1D *hist_tof_all = new TH1D("hist_tof_all", "hist_tof_all", nbins_tof, windowback, windowfront);
     TH1D *hist_tof_bgd = new TH1D("hist_tof_bgd", "hist_tof_bgd", nbins_tof, windowback, windowfront);
     
-    hist_tof_all->Sumw2();
-    hist_tof_bgd->Sumw2();
+    //hist_tof_all->Sumw2();
+    //hist_tof_bgd->Sumw2();
 
     int fEntries = tree->GetEntries();
 
@@ -69,6 +69,8 @@ void ToF252Cf()
     }
 
     TH1D* hist_tof_sub = (TH1D*)hist_tof_all->Clone("hist_tof_sub");
+
+    hist_tof_sub->Sumw2();
 
     hist_tof_sub->Add(hist_tof_bgd,-1);
     

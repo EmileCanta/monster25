@@ -11,15 +11,27 @@ void effplastic()
     reverse(begin(ex), end(ex));
     reverse(begin(ey), end(ey));
 
-    double eytest[n];
-    fill(begin(eytest), end(eytest), 0);
+    //double eytest[n];
+    //fill(begin(eytest), end(eytest), 0);
 
-    TCanvas *c1 = new TCanvas("c1", "Graph avec erreurs", 800, 600);
+    TCanvas *c1 = new TCanvas("c1", "c1", 800, 600);
 
-    TGraphErrors *gr1 = new TGraphErrors(n, x, y, ex, ey);
+    TGraphErrors *gr = new TGraphErrors(n, x, y, ex, ey);
 
-    gr1->SetMarkerStyle(21);
-    gr1->SetMarkerColor(kBlue);
-    gr1->SetLineColor(kBlue);
-    gr1->Draw("ACP");
+    TGraph *gr0 = new TGraph();
+    TGraph *gr1 = new TGraph();
+    TGraph *gr2 = new TGraph();
+
+    for(int i = 0; i<=13; i++)
+    {
+        gr0->AddPoint(x[i], (y[i] * 100.));
+        gr1->AddPoint(x[i], (y[i] + (ey[i]/2)) * 100.);
+        gr2->AddPoint(x[i], (y[i] - (ey[i]/2)) * 100.);
+    }
+
+    //gr->Draw("ACP");
+    
+    gr0->Draw("APL");
+    gr1->Draw("LSAME");
+    gr2->Draw("LSAME");
 }
