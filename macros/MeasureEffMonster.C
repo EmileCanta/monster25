@@ -8,14 +8,11 @@ void MeasureEffMonster()
 
     TH1D* HistEn = (TH1D*)FileEn->Get("hist_E");
 
-    const int Nbins = 177;
-    double Xmax = HistEn->GetXaxis()->GetXmax();
+    int Nbins = HistEn->GetNbinsX();
 
     TGraphErrors* GraphEffMon = new TGraphErrors();
         
     GraphEffMon->SetTitle("GraphEffMon");
-
-    GraphEffMon->AddPointError(0., 0., 0., 0.);
 
     double step = 0.;
     double Ndecays = 13881479.;
@@ -29,12 +26,17 @@ void MeasureEffMonster()
 
     double ErrEffMon = 0.;
 
-    double x[Nbins]; 
-    double y[Nbins]; 
-    double ymin[Nbins]; 
-    double ymax[Nbins]; 
+    vector<double> x; 
+    vector<double> y; 
+    vector<double> ymin; 
+    vector<double> ymax; 
+    
+    TGraph* GraphEffMonPlot = new TGraph();
+    TGraph* GraphEffMonMin = new TGraph();
+    TGraph* GraphEffMonMax = new TGraph();
+    TGraph* GraphEffMonShade = new TGraph();
 
-    for(int i = 0; i < Nbins; i++)
+    for(int i = 1; i <= Nbins; i++)
     {
         Ndetected = HistEn->GetBinContent(i);
         
@@ -45,42 +47,41 @@ void MeasureEffMonster()
         EffMon = (Ndetected / (0.03 * Nemitted));
         ErrEffMon = pow(HistEn->GetBinError(i)/(Nemitted*0.03),2) + pow(HistEn->GetBinContent(i)*0.3/(Nemitted*Ndecays*0.03),2);
 
-        x[i] = HistEn->GetBinCenter(i);
+        GraphEffMon->SetPoint(i-1, HistEn->GetBinCenter(i), EffMon);
+        GraphEffMon->SetPointError(i-1, -4.83e-3+0.0416*HistEn->GetBinCenter(i)+3.82e-3*pow(HistEn->GetBinCenter(i),2), sqrt(ErrEffMon));
 
-        y[i] = EffMon * 100.;;
-        ymin[i] = (EffMon - (sqrt(ErrEffMon)/2.)) * 100.;
-        ymax[i] = (EffMon + (sqrt(ErrEffMon)/2.)) * 100.;
-
-        GraphEffMon->AddPointError(HistEn->GetBinCenter(i), EffMon, -4.83e-3+0.0416*HistEn->GetBinCenter(i)+3.82e-3*pow(HistEn->GetBinCenter(i),2), sqrt(ErrEffMon));
+        GraphEffMonPlot->SetPoint(i-1, HistEn->GetBinCenter(i), EffMon * 100.); 
+        GraphEffMonMin->SetPoint(i-1, HistEn->GetBinCenter(i), (EffMon - (sqrt(ErrEffMon)/2.) - (0.025*EffMon)) * 100.);
+        GraphEffMonMax->SetPoint(i-1, HistEn->GetBinCenter(i), (EffMon + (sqrt(ErrEffMon)/2.) + (0.025*EffMon))* 100.);
+        
+        x.push_back(HistEn->GetBinCenter(i));
+        y.push_back(EffMon * 100.);
+        ymin.push_back((EffMon - (sqrt(ErrEffMon)/2.) - (0.025*EffMon)) * 100.);
+        ymax.push_back((EffMon + (sqrt(ErrEffMon)/2.) + (0.025*EffMon)) * 100.);
     }
 
-    TGraph* GraphEffMons = new TGraph(Nbins, x, y);
-    TGraph* GraphEffMonMin = new TGraph(Nbins, x, ymin);
-    TGraph* GraphEffMonMax = new TGraph(Nbins, x, ymax);
-    TGraph* GraphEffMonShade = new TGraph(2 * Nbins);
-    
-        
-    for(int i = 0; i < Nbins; i++)
+    for(int i = 1; i <= Nbins; i++)
     {
-        GraphEffMonShade->SetPoint(i, x[i], ymax[i]);       
-        GraphEffMonShade->SetPoint(Nbins+i, x[Nbins-i-1], ymin[Nbins-i-1]);       
+        GraphEffMonShade->SetPoint(i-1, x[i-1], ymax[i-1]);       
+        GraphEffMonShade->SetPoint(Nbins+i-1, x[Nbins-i], ymin[Nbins-i]);       
     }
 
     GraphEffMonShade->SetFillColorAlpha(kRed, 0.5);
     GraphEffMonShade->Draw("AF");
 
-    GraphEffMons->SetLineColor(2);
-    GraphEffMons->SetLineWidth(2);
-    GraphEffMons->SetMarkerColor(2);
-    GraphEffMons->SetMarkerSize(1);
-    GraphEffMons->SetFillStyle(1001);
-    GraphEffMons->SetFillColorAlpha(2, 0.5);
+    GraphEffMonPlot->SetLineColor(2);
+    GraphEffMonPlot->SetLineWidth(2);
+    GraphEffMonPlot->SetMarkerColor(2);
+    GraphEffMonPlot->SetMarkerSize(1);
+    GraphEffMonPlot->SetFillStyle(1001);
+    GraphEffMonPlot->SetFillColorAlpha(2, 0.5);
 
-    GraphEffMons->Draw("CP");
+    GraphEffMonPlot->Draw("L");
+    //GraphEffMon->Draw("SAMEP");
 
     TLegend* legend = new TLegend(0.1,0.7,0.3,0.9);
 
-    legend->AddEntry(GraphEffMons,"MONSTER efficiency","plf");
+    legend->AddEntry(GraphEffMonPlot,"MONSTER efficiency","plf");
     legend->SetBorderSize(0);
     legend->SetTextSize(0.05);
 

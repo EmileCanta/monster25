@@ -20,7 +20,7 @@ void ToF252Cf()
     
     double windowback = 25.; //Corresponds to Eneut = 20.7 MeV
     double windowfront = 216.; //Corresponds to Eneut = 280 kev (threshold)
-    int nbins_tof = 239;
+    int nbins_tof = 102; //Corresponds to binning of 0.8 ns
 
     tree->SetBranchAddress("MonsterPlastic_tDiff", &tdiff);
     tree->SetBranchAddress("MonsterPlastic_Q3Cond",&nrj3);

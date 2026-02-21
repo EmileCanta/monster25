@@ -20,7 +20,7 @@ void ToF82Ga()
     
     double windowback = 52.; //Corresponds to Eneut = 4.8 MeV (monster efficiency curve max)
     double windowfront = 216.; //Corresponds to Eneut = 280 kev (threshold)
-    int nbins_tof = 137; 
+    int nbins_tof = 58; 
     
     tree->SetBranchAddress("MonsterPlastic_tDiff", &tdiff);
     tree->SetBranchAddress("MonsterPlastic_Q3Cond",&nrj3);

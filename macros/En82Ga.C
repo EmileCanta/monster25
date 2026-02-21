@@ -16,8 +16,8 @@ void En82Ga()
     double joultoMeV = 6.241509343260e12;
     double d = 1.575;
 
-    double sigma_bkg = 2;
-    double bkgPerBin = 85;
+    double sigma_bkg = 5;
+    double bkgPerBin = 207;
 
     int NsmearPerBin = 500;
 
@@ -25,7 +25,7 @@ void En82Ga()
     
     int NbinsE = 500;
     double MaxE = 20.;
-    double MinE = 0.;
+    double MinE = 0.; //Corresponds to 40 keV bin width which is the uncertainty of the setup at 1 MeV neutrons
     
     double SmearingVar = 1.2e-9;
     
@@ -130,7 +130,7 @@ void En82Ga()
 
         TSpline3* SplineToy = new TSpline3("SplineToy", GraphToy);
 
-        for(int ib=1; ib<=nBins; ++ib)
+        for(int ib = hist_E->GetXaxis()->FindBin(0.28); ib<=nBins; ++ib)
         {
             double xBin = hist_E->GetXaxis()->GetBinCenter(ib);
             double scale = 0.0;

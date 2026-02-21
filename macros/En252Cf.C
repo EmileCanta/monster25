@@ -3,8 +3,6 @@ void En252Cf()
     TFile *fileeffmon = TFile::Open("~/phd/analysis/monster25/root_files/effmonster.root", "READ");
     TFile *filein = TFile::Open("~/phd/analysis/monster25/root_files/ToF252Cf.root", "READ");
 
-    TGraph* grapheffmon = (TGraph*)fileeffmon->Get("GraphEffMon");
-
     TFile *fileout = new TFile("~/phd/analysis/monster25/root_files/En252Cf.root","RECREATE");
 
     TH1D* hist_tof_sub = (TH1D*)filein->Get("hist_tof_sub");
@@ -21,7 +19,7 @@ void En252Cf()
     double MaxE = 20.;
     double MinE = 0.;
 
-    double SmearingVar = 0.8e-9;
+    double SmearingVar = 2.35*0.8e-9;
 
     TRandom3 random(0);
 

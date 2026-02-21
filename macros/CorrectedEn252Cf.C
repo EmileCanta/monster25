@@ -59,7 +59,7 @@ void CorrectedEn252Cf()
         //else if(itoy % 200 == 0) { SplineToy->Draw("same"); }
           
 
-        for(int ib=1; ib<=nBins; ++ib)
+        for(int ib = hist_E->GetXaxis()->FindBin(0.28); ib<=nBins; ++ib)
         {
             double xBin = hist_E->GetXaxis()->GetBinCenter(ib);
             double scale = 0.0;
@@ -78,6 +78,7 @@ void CorrectedEn252Cf()
             {
                 scale = SplineToy->Eval(xBin);
             }
+
 
             double inv = 1. / (scale*0.03);
             double C = hist_E->GetBinContent(ib);
